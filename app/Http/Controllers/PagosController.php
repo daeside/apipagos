@@ -31,6 +31,7 @@ class PagosController extends Controller
                 'ClavePrograma' => 'ROYS'
             ]
         ];
-        return Paypal::CreatePayment('MXN', 1500, $items, 'ES');
+        //$payData = Paypal::CreatePayment('MXN', 1500, $items, 'ES');
+        return Paypal::ExecutePayment('PAYID-L53B5BI1JA2008903887573S', 'AX7TWS9KUE92L');
     }
 }

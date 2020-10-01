@@ -13,8 +13,8 @@ class Paypal
     private static function GetToken()
     {
         $token = '';
-        $uri = env('paypalUrlPlus') . '/oauth2/token';
-        $byteArray = utf8_encode(env('paypalIdPlus') . ':' . env('paypalSecretPlus'));
+        $uri = env('paypalUrl') . '/oauth2/token';
+        $byteArray = utf8_encode(env('paypalId') . ':' . env('paypalSecret'));
         $request = ['grant_type' => 'client_credentials'];
         $headers = [
             'Authorization: Basic ' . base64_encode($byteArray),
@@ -32,7 +32,7 @@ class Paypal
     private static function GetIdWebExperience($headers, $sessionId)
     {
         $webId = '';
-        $uri = env('paypalUrlPlus') . '/payment-experience/web-profiles';
+        $uri = env('paypalUrl') . '/payment-experience/web-profiles';
         $data = [
             'name' => $sessionId,
             'temporary' => true,
@@ -69,7 +69,6 @@ class Paypal
     {
         try
         {
-            $transactionList = [];
             $products = [];
             $name = $lan == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
             $invoiceNumber = Paypal::GetRandomInvoiceNumber();
@@ -78,10 +77,10 @@ class Paypal
             foreach ($items as $key => $value)
             {
                 $obj = new stdClass();
-                $obj->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("Y-m-d"), $value->Horario);
+                $obj->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
                 $obj->currency = $currency;
                 $obj->price = strval($value->ImporteConDescuento);
-                $obj->quantiy = '1';
+                $obj->quantity = '1';
                 $obj->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
 
                 array_push($products, $obj);
@@ -91,9 +90,9 @@ class Paypal
                 'invoice_number' => $invoiceNumber,
                 'amount' => [
                     'currency' => $currency,
-                    'total' => $amount,
+                    'total' => strval($amount),
                     'details' => [
-                        'subtotal' => $amount,
+                        'subtotal' => strval($amount),
                         'tax' => 0,
                         'shipping' => 0,
                         'handling_fee' => 0,
@@ -109,7 +108,7 @@ class Paypal
                     'items' => $products
                 ]
             ];
-            return $transactionList;
+            return [$transactionList];
         }
         catch (Exception $ex)
         {
@@ -120,7 +119,7 @@ class Paypal
     public static function CreatePayment($currency, $amount, $items, $lan)
     {
         $json = '';
-        $uri = env('paypalUrlPlus') . '/payments/payment';
+        $uri = env('paypalUrl') . '/payments/payment';
         $token = Paypal::GetToken();
         $transactionId = strval(time());
         $headers = [
@@ -142,75 +141,74 @@ class Paypal
                 'cancel_url' => 'https://www.dolphindiscovery.com/'
             ]
         ];
-        $json = HTTP::Post($uri, $data, $headers);
+        $response = HTTP::Post($uri, $data, $headers);
 
-        /*if (!string.IsNullOrEmpty(json))
+        if (!empty($response))
         {
-            var response = JsonConvert.DeserializeObject<CreatePaymentResponse>(json);
-            foreach (var item in response.links)
+            $object = json_decode($response);
+            foreach ($object->links as $key => $value)
             {
-                if (item.rel == "approval_url")
+                if ($value->rel == "approval_url")
                 {
-                    payData.payId = response.id;
-                    payData.url = item.href;
+                    $payData = [
+                        'payId' => $object->id,
+                        'url' => $value->href
+                    ];
                     break;
                 }
             }
         }
-        return payData;*/
-        return $json;
+        return $payData;
     }
-    /*
 
-        public static string ExecutePayment(string paymentId, string payerId, string fakeError = null)
+    public static function ExecutePayment($paymentId, $payerId, $fakeError = null)
+    {
+        $json = '';
+        $token = Paypal::GetToken();
+        $autorizationCode = '';
+        $uri = sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId);
+
+        $headers = [
+            'Authorization: Bearer ' . $token,
+            'Content-Type: application/json',
+            'PayPal-Mock-Response: ' . json_encode(['mock_application_codes' => $fakeError ])
+        ];
+
+        if(empty($fakeError))
         {
-            string json = string.Empty;
-            string token = GetToken();
-            string autorizationCode = string.Empty;
-            List<Header> customHeaders = new List<Header>
-            {
-                new Header { Type = "PayPal-Mock-Response", Value = JsonConvert.SerializeObject(new { mock_application_codes = fakeError }) }
-            };
+            unset($headers[2]);
+        }
 
-            var headers = new RequestSettings
-            {
-                Content = new Header { Type = "Content-Type", Value = "application/json" },
-                Authorization = new Header { Type = "Bearer", Value = token },
-                CustomHeaders = customHeaders
-            };
+        $data = [
+            'payer_id' => $payerId
+        ];
+        $response = HTTP::Post($uri, $data, $headers);
 
-            if(string.IsNullOrEmpty(fakeError))
+        if (!empty($response))
+        {
+            try
             {
-                headers.CustomHeaders = null;
-            }
+                $object = json_decode($response);
+                $exist = array_key_exists('state', json_decode($response, true));
 
-            var data = new
-            {
-                payer_id = payerId
-            };
-            json = HTTP.Post(string.Format(GlobalSettings.paypalExecutePaymentUrlPlus, paymentId), data, headers);
-
-            if (!string.IsNullOrEmpty(json))
-            {
-                try
+                if($exist)
                 {
-                    var response = JsonConvert.DeserializeObject<ExecutePaymentResponse>(json);
-
-                    if(response.state == "approved")
+                    if($object->state == "approved")
                     {
-                        if (response.transactions[0].related_resources[0].sale.state == "completed")
+                        if ($object->transactions[0]->related_resources[0]->sale->state == "completed")
                         {
-                            autorizationCode = response.transactions[0].related_resources[0].sale.id;
+                            $autorizationCode = $object->transactions[0]->related_resources[0]->sale->id;
                         }
                     }
-                    else
-                    {
-                        var responseError = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(json);
-                        autorizationCode = responseError.FirstOrDefault(x => x.Value == "INSTRUMENT_DECLINED" || x.Value == "TRANSACTION_REFUSED").Value;
-                    }
                 }
-                catch { }
+                else
+                {
+                    $responseError = json_decode($response);
+                    $autorizationCode = $responseError->name == ('INSTRUMENT_DECLINED' || 'TRANSACTION_REFUSED') ? $responseError->name : '';
+                }
             }
-            return autorizationCode;
-        }*/
+            catch(Exception $ex) {}
+        }
+        return $autorizationCode;
+    }
 }
