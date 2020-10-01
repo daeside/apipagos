@@ -18,5 +18,5 @@ use Illuminate\Http\Request;
 });*/
 
 Route::prefix('pagos')->group(function () {
-    Route::post('/paypalplus', 'PagosController@Test');
+    Route::get('/paypalplus', 'PagosController@Test');
 });

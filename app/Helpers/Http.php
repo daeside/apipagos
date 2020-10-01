@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use Exception;
+
 class Http
 {
     public static function Get($uri, $settings = null)
@@ -10,21 +12,21 @@ class Http
         return $response;
     }
 
-    public static function Post($uri, $data, $settings = null, $requestFormatData = null)
+    public static function Post($uri, $data, $settings = null, $dataType = null)
     {
-        $response = Http::Request($uri, $settings, 'POST', $data, $requestFormatData);
+        $response = Http::Request($uri, $settings, 'POST', $data, $dataType);
         return $response;
     }
 	
-	public static function Patch($uri, $data, $settings = null, $requestFormatData = null)
+	public static function Patch($uri, $data, $settings = null, $dataType = null)
     {
-        $response = Http::Request($uri, $settings, 'PATCH', $data, $requestFormatData);
-        return response.Result;
+        $response = Http::Request($uri, $settings, 'PATCH', $data, $dataType);
+        return $response;
     }
 
-    public static function Put($uri, $data, $settings = null, $requestFormatData = null)
+    public static function Put($uri, $data, $settings = null, $dataType = null)
     {
-        $response = Http::Request($uri, $settings, 'PUT', $data, $requestFormatData);
+        $response = Http::Request($uri, $settings, 'PUT', $data, $dataType);
         return $response;
     }
 
@@ -34,23 +36,30 @@ class Http
         return $response;
     }
 
-    private static function Request($uri, $settings, $method, $data = null, $requestFormatData = null)
+    private static function Request($uri, $settings, $method, $data = null, $dataType = null)
     {
         $response = null;
 
         try
         {
             $client = curl_init();
-            $client = Http::SetRequestSettings($client, $uri, $data, $method, $settings, $requestFormatData);
+            $client = Http::SetRequestSettings($client, $uri, $data, $method, $settings, $dataType);
             $response = curl_exec($client);
+            $httpCode = curl_getinfo($client, CURLINFO_HTTP_CODE);
             curl_close($client);
+            //$response = Http::Ok($httpCode) ? $response : null;
         }
-        catch(exception $ex)
+        catch(Exception $ex)
         {}
         return $response;
     }
 
-    private static function SetRequestSettings($client, $uri, $data, $method, $settings, $requestFormatData)
+    private static function Ok($httpCode)
+    {
+        return ($httpCode >= 200 && $httpCode <= 299) ? true : false;
+    }
+
+    private static function SetRequestSettings($client, $uri, $data, $method, $settings, $dataType)
     {
         curl_setopt($client, CURLOPT_URL, $uri);
         curl_setopt($client, CURLOPT_RETURNTRANSFER, true);
@@ -60,15 +69,15 @@ class Http
         {
             curl_setopt($client, CURLOPT_HTTPHEADER, $settings);
         }
-		$content = Http::GenertateContent($requestFormatData, $data);
+		$content = Http::GenertateContent($dataType, $data);
         $client = Http::SetHttpMethod($client, $method, $content);
         return $client;
     }
 	
-	private static function GenertateContent($requestFormatData, $data)
+	private static function GenertateContent($dataType, $data)
 	{
 		$content = null;
-		$request = empty($requestFormatData) ? '' : strtoupper($requestFormatData);
+		$request = empty($dataType) ? '' : strtoupper($dataType);
 		
 		switch ($request)
         {

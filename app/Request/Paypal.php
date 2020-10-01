@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Request;
 
 use \App\Helpers\Http;
 use \App\Helpers\Utilities;
@@ -8,9 +8,9 @@ use Exception;
 use stdClass;
 use Carbon\Carbon;
 
-class PaypalPlus
+class Paypal
 {
-    public static function GetToken()
+    private static function GetToken()
     {
         $token = '';
         $uri = env('paypalUrlPlus') . '/oauth2/token';
@@ -21,18 +21,18 @@ class PaypalPlus
         ];
         $response = HTTP::Post($uri, $request, $headers, 'urlencode');
 
-        try
+        if(!empty($response))
         {
             $object = json_decode($response);
             $token = $object->access_token;
         }
-        catch(Exception $ex){}
         return $token;
     }
 
-    public static function GetIdWebExperience($headers, $sessionId)
+    private static function GetIdWebExperience($headers, $sessionId)
     {
         $webId = '';
+        $uri = env('paypalUrlPlus') . '/payment-experience/web-profiles';
         $data = [
             'name' => $sessionId,
             'temporary' => true,
@@ -48,17 +48,16 @@ class PaypalPlus
                 'bank_txn_pending_url' => 'https://example.com/flow_config/'
             ]
         ];
-        $response = HTTP::Post(env('paypalUrlPlus') . '/payment-experience/web-profiles', $data, $headers);
+        $response = HTTP::Post($uri, $data, $headers);
 
-        try
+        if(!empty($response))
         {
             $object = json_decode($response);
             $webId = $object->id;
         }
-        catch(Exception $ex){}
         return $webId;
     }
-        
+    
     // Gets a random invoice number to be used with a sample request that requires an invoice number.
     // Returns a random invoice number in the range of 0 to 999999
     private static function GetRandomInvoiceNumber()
@@ -73,16 +72,17 @@ class PaypalPlus
             $transactionList = [];
             $products = [];
             $name = $lan == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
-            $invoiceNumber = PaypalPlus::GetRandomInvoiceNumber();
+            $invoiceNumber = Paypal::GetRandomInvoiceNumber();
+            $items = json_decode(json_encode($items));
 
-            foreach ($item as $key => $value)
+            foreach ($items as $key => $value)
             {
                 $obj = new stdClass();
-                $obj->name = sprintf($name, $item->Programa, $item->Adultos, $item->Menores, Carbon::parse($item->Fecha)->format("Y-m-d"), $item->Horario);
+                $obj->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("Y-m-d"), $value->Horario);
                 $obj->currency = $currency;
-                $obj->price = strval($item->ImporteConDescuento);
+                $obj->price = strval($value->ImporteConDescuento);
                 $obj->quantiy = '1';
-                $obj->sku = sprintf('%s-%s', $item->ClaveLocacion, $item->ClavePrograma);
+                $obj->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
 
                 array_push($products, $obj);
             }
@@ -117,57 +117,50 @@ class PaypalPlus
         }
     }
 
-        /*
-        // Generamos la referencia externa con base en el Unix Time
-        private static string ConvertToUnixTime()
-        {
-            DateTime sTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return ((long)(DateTime.Now - sTime).TotalSeconds).ToString();
-        }
+    public static function CreatePayment($currency, $amount, $items, $lan)
+    {
+        $json = '';
+        $uri = env('paypalUrlPlus') . '/payments/payment';
+        $token = Paypal::GetToken();
+        $transactionId = strval(time());
+        $headers = [
+            'Authorization: Bearer ' . $token,
+            'Content-Type: application/json'
+        ];
+        $webId = Paypal::GetIdWebExperience($headers, $transactionId);
+        $transactions = Paypal::GetTransactionsList($currency, $amount, $items, $lan);
+        $payData = [];
+        $data = [
+            'intent' => 'sale',
+            'experience_profile_id' => $webId,
+            'payer' => [
+                'payment_method' => 'paypal'
+            ],
+            'transactions' => $transactions,
+            'redirect_urls' => [
+                'return_url' => 'https://www.garrafon.com/',
+                'cancel_url' => 'https://www.dolphindiscovery.com/'
+            ]
+        ];
+        $json = HTTP::Post($uri, $data, $headers);
 
-        public static CreatePaymentResponseData CreatePayment(string currency, string amount, List<CartItem> items, string lan)
+        /*if (!string.IsNullOrEmpty(json))
         {
-            string json = string.Empty;
-            string token = GetToken();
-            string transactionId = ConvertToUnixTime();
-            var headers = new RequestSettings
+            var response = JsonConvert.DeserializeObject<CreatePaymentResponse>(json);
+            foreach (var item in response.links)
             {
-                Content = new Header { Type = "Content-Type", Value = "application/json" },
-                Authorization = new Header { Type = "Bearer", Value = token }
-            };
-             string WebId = GetIdWebExperience(headers, transactionId);
-            var payData = new CreatePaymentResponseData();
-            var data = new
-            {
-                intent = "sale",
-                experience_profile_id = WebId,
-                payer = new {
-                    payment_method = "paypal"
-                },
-                transactions = GetTransactionsList(currency, amount, items, lan),
-                redirect_urls = new
+                if (item.rel == "approval_url")
                 {
-                    return_url = "https://www.garrafon.com/",
-                    cancel_url = "https://www.dolphindiscovery.com/"
-                }
-            };
-            json = HTTP.Post(GlobalSettings.paypalPaymentUrlPlus, data, headers);
-
-            if (!string.IsNullOrEmpty(json))
-            {
-                var response = JsonConvert.DeserializeObject<CreatePaymentResponse>(json);
-                foreach (var item in response.links)
-                {
-                    if (item.rel == "approval_url")
-                    {
-                        payData.payId = response.id;
-                        payData.url = item.href;
-                        break;
-                    }
+                    payData.payId = response.id;
+                    payData.url = item.href;
+                    break;
                 }
             }
-            return payData;
         }
+        return payData;*/
+        return $json;
+    }
+    /*
 
         public static string ExecutePayment(string paymentId, string payerId, string fakeError = null)
         {
