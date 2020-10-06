@@ -13,11 +13,11 @@ class Paypal
     private static function GetToken()
     {
         $token = '';
-        $uri = env('paypalUrl') . '/oauth2/token';
-        $byteArray = utf8_encode(env('paypalId') . ':' . env('paypalSecret'));
+        $uri = sprintf('%s/oauth2/token', env('paypalUrl'));
+        $byteArray = utf8_encode(sprintf('%s:%s', env('paypalId'), env('paypalSecret')));
         $request = ['grant_type' => 'client_credentials'];
         $headers = [
-            'Authorization: Basic ' . base64_encode($byteArray),
+            sprintf('Authorization: Basic %s', base64_encode($byteArray))
         ];
         $response = HTTP::Post($uri, $request, $headers, 'urlencode');
 
@@ -32,7 +32,7 @@ class Paypal
     private static function GetIdWebExperience($headers, $sessionId)
     {
         $webId = '';
-        $uri = env('paypalUrl') . '/payment-experience/web-profiles';
+        $uri = sprintf('%s/payment-experience/web-profiles', env('paypalUrl'));
         $data = [
             'name' => $sessionId,
             'temporary' => true,
@@ -119,11 +119,11 @@ class Paypal
     public static function CreatePayment($currency, $amount, $items, $lan)
     {
         $json = '';
-        $uri = env('paypalUrl') . '/payments/payment';
+        $uri = sprintf('%s/payments/payment', env('paypalUrl'));
         $token = Paypal::GetToken();
         $transactionId = strval(time());
         $headers = [
-            'Authorization: Bearer ' . $token,
+            sprintf('Authorization: Bearer %s', $token),
             'Content-Type: application/json'
         ];
         $webId = Paypal::GetIdWebExperience($headers, $transactionId);
@@ -169,9 +169,9 @@ class Paypal
         $uri = sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId);
 
         $headers = [
-            'Authorization: Bearer ' . $token,
+            sprintf('Authorization: Bearer %s', $token),
             'Content-Type: application/json',
-            'PayPal-Mock-Response: ' . json_encode(['mock_application_codes' => $fakeError ])
+            sprintf('PayPal-Mock-Response: %s', json_encode(['mock_application_codes' => $fakeError ])) 
         ];
 
         if(empty($fakeError))

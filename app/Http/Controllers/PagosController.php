@@ -32,6 +32,6 @@ class PagosController extends Controller
             ]
         ];
         //$payData = Paypal::CreatePayment('MXN', 1500, $items, 'ES');
-        return Paypal::ExecutePayment('PAYID-L53B5BI1JA2008903887573S', 'AX7TWS9KUE92L');
+        return Paypal::ExecutePayment('PAYID-L56KISI6GS01762KA393291P', 'AQ67T33R5EU22');
     }
 }

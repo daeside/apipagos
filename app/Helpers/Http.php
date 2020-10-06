@@ -56,7 +56,7 @@ class Http
 
     private static function Ok($httpCode)
     {
-        return $httpCode >= 200 && $httpCode <= 299;
+        return ($httpCode >= 200 && $httpCode <= 299) ? true : false;
     }
 
     private static function SetRequestSettings($client, $uri, $data, $method, $settings, $dataType)
