@@ -13,13 +13,17 @@ class Paypal
     private static function GetToken()
     {
         $token = '';
-        $uri = sprintf('%s/oauth2/token', env('paypalUrl'));
         $byteArray = utf8_encode(sprintf('%s:%s', env('paypalId'), env('paypalSecret')));
-        $request = ['grant_type' => 'client_credentials'];
-        $headers = [
-            sprintf('Authorization: Basic %s', base64_encode($byteArray))
-        ];
-        $response = HTTP::Post($uri, $request, $headers, 'urlencode');
+        $response = HTTP::Post([
+            'uri' => sprintf('%s/oauth2/token', env('paypalUrl')), 
+            'data' => [
+                'grant_type' => 'client_credentials'
+            ], 
+            'headers' => [
+                sprintf('Authorization: Basic %s', base64_encode($byteArray))
+            ], 
+            'format' => 'urlencode'
+        ]);
 
         if(!empty($response))
         {
@@ -32,7 +36,6 @@ class Paypal
     private static function GetIdWebExperience($headers, $sessionId)
     {
         $webId = '';
-        $uri = sprintf('%s/payment-experience/web-profiles', env('paypalUrl'));
         $data = [
             'name' => $sessionId,
             'temporary' => true,
@@ -48,7 +51,11 @@ class Paypal
                 'bank_txn_pending_url' => 'https://example.com/flow_config/'
             ]
         ];
-        $response = HTTP::Post($uri, $data, $headers);
+        $response = HTTP::Post([
+            'uri' => sprintf('%s/payment-experience/web-profiles', env('paypalUrl')),
+            'data' => $data,
+            'headers' => $headers
+        ]);
 
         if(!empty($response))
         {
@@ -119,7 +126,6 @@ class Paypal
     public static function CreatePayment($currency, $amount, $items, $lan)
     {
         $json = '';
-        $uri = sprintf('%s/payments/payment', env('paypalUrl'));
         $token = Paypal::GetToken();
         $transactionId = strval(time());
         $headers = [
@@ -141,7 +147,11 @@ class Paypal
                 'cancel_url' => 'https://www.dolphindiscovery.com/'
             ]
         ];
-        $response = HTTP::Post($uri, $data, $headers);
+        $response = HTTP::Post([
+            'uri' => sprintf('%s/payments/payment', env('paypalUrl')),
+            'data' => $data,
+            'headers' => $headers
+        ]);
 
         if (!empty($response))
         {
@@ -166,7 +176,6 @@ class Paypal
         $json = '';
         $token = Paypal::GetToken();
         $autorizationCode = '';
-        $uri = sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId);
 
         $headers = [
             sprintf('Authorization: Bearer %s', $token),
@@ -179,35 +188,35 @@ class Paypal
             unset($headers[2]);
         }
 
-        $data = [
-            'payer_id' => $payerId
-        ];
-        $response = HTTP::Post($uri, $data, $headers);
+        $response = HTTP::Post([
+            'uri' => sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId),
+            'data' => [
+                'payer_id' => $payerId
+            ],
+            'headers' => $headers,
+            'errors' => true
+        ]);
 
         if (!empty($response))
         {
-            try
-            {
-                $object = json_decode($response);
-                $exist = array_key_exists('state', json_decode($response, true));
+            $object = json_decode($response);
+            $exist = array_key_exists('state', json_decode($response, true));
 
-                if($exist)
+            if($exist)
+            {
+                if($object->state == "approved")
                 {
-                    if($object->state == "approved")
+                    if ($object->transactions[0]->related_resources[0]->sale->state == "completed")
                     {
-                        if ($object->transactions[0]->related_resources[0]->sale->state == "completed")
-                        {
-                            $autorizationCode = $object->transactions[0]->related_resources[0]->sale->id;
-                        }
+                        $autorizationCode = $object->transactions[0]->related_resources[0]->sale->id;
                     }
                 }
-                else
-                {
-                    $responseError = json_decode($response);
-                    $autorizationCode = $responseError->name == ('INSTRUMENT_DECLINED' || 'TRANSACTION_REFUSED') ? $responseError->name : '';
-                }
             }
-            catch(Exception $ex) {}
+            else
+            {
+                $error = json_decode($response);
+                $autorizationCode = $error->name == 'INSTRUMENT_DECLINED' || $error->name == 'TRANSACTION_REFUSED' ? $error->name : '';
+            }
         }
         return $autorizationCode;
     }

@@ -6,78 +6,98 @@ use Exception;
 
 class Http
 {
-    public static function Get($uri, $settings = null)
+    public static function Get(Array $settings)
     {
-        $response = Http::Request($uri, $settings, 'GET');
+        $settings['type'] = 'GET';
+        $response = Http::Request($settings);
         return $response;
     }
 
-    public static function Post($uri, $data, $settings = null, $dataType = null)
+    public static function Post(Array $settings)
     {
-        $response = Http::Request($uri, $settings, 'POST', $data, $dataType);
+        $settings['type'] = 'POST';
+        $response = Http::Request($settings);
         return $response;
     }
 	
-	public static function Patch($uri, $data, $settings = null, $dataType = null)
+	public static function Patch(Array $settings)
     {
-        $response = Http::Request($uri, $settings, 'PATCH', $data, $dataType);
+        $settings['type'] = 'PATCH';
+        $response = Http::Request($settings);
         return $response;
     }
 
-    public static function Put($uri, $data, $settings = null, $dataType = null)
+    public static function Put(Array $settings)
     {
-        $response = Http::Request($uri, $settings, 'PUT', $data, $dataType);
+        $settings['type'] = 'PUT';
+        $response = Http::Request($settings);
         return $response;
     }
 
-    public static function Delete($uri, $settings = null)
+    public static function Delete(Array $settings)
     {
-		$response = Http::Request($uri, $settings, 'DELETE');
+        $settings['type'] = 'DELETE';
+		$response = Http::Request($settings);
         return $response;
     }
 
-    private static function Request($uri, $settings, $method, $data = null, $dataType = null)
+    private static function Request(Array $settings)
     {
         $response = null;
 
         try
         {
             $client = curl_init();
-            $client = Http::SetRequestSettings($client, $uri, $data, $method, $settings, $dataType);
+            $settings = Http::ValidateSettings($settings);
+            $client = Http::SetRequestSettings($client, $settings);
             $response = curl_exec($client);
-            $httpCode = curl_getinfo($client, CURLINFO_HTTP_CODE);
+            $code = curl_getinfo($client, CURLINFO_HTTP_CODE);
             curl_close($client);
-            //$response = Http::Ok($httpCode) ? $response : null;
+            $response = Http::Ok($settings->errors, $code) ? $response : null;
         }
         catch(Exception $ex)
         {}
         return $response;
     }
 
-    private static function Ok($httpCode)
+    private static function Ok($errors, $code)
     {
-        return ($httpCode >= 200 && $httpCode <= 299) ? true : false;
+        return $errors ? true : $code >= 200 && $code <= 299;
     }
 
-    private static function SetRequestSettings($client, $uri, $data, $method, $settings, $dataType)
+    private static function ValidateSettings(Array $settings)
     {
-        curl_setopt($client, CURLOPT_URL, $uri);
+        $settings['uri'] = array_key_exists('uri', $settings) ? $settings['uri'] : '';
+        $settings['data'] = array_key_exists('data', $settings) ? $settings['data'] : [];
+        $settings['headers'] = array_key_exists('headers', $settings) ? $settings['headers'] : [];
+        $settings['format'] = array_key_exists('format', $settings) ? $settings['format'] : '';
+        $settings['errors'] = array_key_exists('errors', $settings) ? $settings['errors'] : false;
+        return json_decode(json_encode($settings));
+    }
+
+    private static function SetRequestSettings($client, Object $settings)
+    {
+        curl_setopt($client, CURLOPT_URL, $settings->uri);
         curl_setopt($client, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($client, CURLOPT_SSLVERSION, 6); // TLS v1.2
 
-        if (!empty($settings))
+        if (!empty($settings->headers))
         {
-            curl_setopt($client, CURLOPT_HTTPHEADER, $settings);
+            curl_setopt($client, CURLOPT_HTTPHEADER, $settings->headers);
         }
-		$content = Http::GenertateContent($dataType, $data);
-        $client = Http::SetHttpMethod($client, $method, $content);
+
+        if (!empty($settings->data))
+        {
+            $content = Http::GenertateContent($settings->data, $settings->format);
+            $client = Http::SetHttpMethod($client, $content, $settings->type);
+        }
         return $client;
     }
 	
-	private static function GenertateContent($dataType, $data)
+	private static function GenertateContent($data, $type)
 	{
 		$content = null;
-		$request = empty($dataType) ? '' : strtoupper($dataType);
+		$request = empty($type) ? '' : strtoupper($type);
 		
 		switch ($request)
         {
@@ -89,12 +109,12 @@ class Http
 				break;
             default:
 				$content = json_encode($data);
-            break;
+                break;
         }
         return $content;
 	}
 
-    private static function SetHttpMethod($client, $method, $data)
+    private static function SetHttpMethod($client, $data, $method)
     {
         switch ($method)
         {
