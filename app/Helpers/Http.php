@@ -9,35 +9,35 @@ class Http
     public static function Get(Array $settings)
     {
         $settings['type'] = 'GET';
-        $response = Http::Request($settings);
+        $response = self::Request($settings);
         return $response;
     }
 
     public static function Post(Array $settings)
     {
         $settings['type'] = 'POST';
-        $response = Http::Request($settings);
+        $response = self::Request($settings);
         return $response;
     }
 	
 	public static function Patch(Array $settings)
     {
         $settings['type'] = 'PATCH';
-        $response = Http::Request($settings);
+        $response = self::Request($settings);
         return $response;
     }
 
     public static function Put(Array $settings)
     {
         $settings['type'] = 'PUT';
-        $response = Http::Request($settings);
+        $response = self::Request($settings);
         return $response;
     }
 
     public static function Delete(Array $settings)
     {
         $settings['type'] = 'DELETE';
-		$response = Http::Request($settings);
+		$response = self::Request($settings);
         return $response;
     }
 
@@ -48,12 +48,12 @@ class Http
         try
         {
             $client = curl_init();
-            $settings = Http::ValidateSettings($settings);
-            $client = Http::SetRequestSettings($client, $settings);
+            $settings = self::ValidateSettings($settings);
+            $client = self::SetRequestSettings($client, $settings);
             $response = curl_exec($client);
             $code = curl_getinfo($client, CURLINFO_HTTP_CODE);
             curl_close($client);
-            $response = Http::Ok($settings->errors, $code) ? $response : null;
+            $response = self::Ok($settings->errors, $code) ? $response : null;
         }
         catch(Exception $ex)
         {}
@@ -88,8 +88,8 @@ class Http
 
         if (!empty($settings->data))
         {
-            $content = Http::GenertateContent($settings->data, $settings->format);
-            $client = Http::SetHttpMethod($client, $content, $settings->type);
+            $content = self::GenertateContent($settings->data, $settings->format);
+            $client = self::SetHttpMethod($client, $content, $settings->type);
         }
         return $client;
     }

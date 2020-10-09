@@ -16,12 +16,8 @@ class Paypal
         $byteArray = utf8_encode(sprintf('%s:%s', env('paypalId'), env('paypalSecret')));
         $response = HTTP::Post([
             'uri' => sprintf('%s/oauth2/token', env('paypalUrl')), 
-            'data' => [
-                'grant_type' => 'client_credentials'
-            ], 
-            'headers' => [
-                sprintf('Authorization: Basic %s', base64_encode($byteArray))
-            ], 
+            'data' => [ 'grant_type' => 'client_credentials' ], 
+            'headers' => [ sprintf('Authorization: Basic %s', base64_encode($byteArray)) ], 
             'format' => 'urlencode'
         ]);
 
@@ -39,9 +35,7 @@ class Paypal
         $data = [
             'name' => $sessionId,
             'temporary' => true,
-            'presentation' => [
-                'logo_image' => 'https://example.com/logo_image/'
-            ],
+            'presentation' => [ 'logo_image' => 'https://example.com/logo_image/' ],
             'input_fields' => [
                 'no_shipping' => 1,
                 'address_override' => 1
@@ -77,23 +71,23 @@ class Paypal
         try
         {
             $products = [];
+            $transactionList = [];
             $name = $lan == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
-            $invoiceNumber = Paypal::GetRandomInvoiceNumber();
+            $invoiceNumber = self::GetRandomInvoiceNumber();
             $items = json_decode(json_encode($items));
 
             foreach ($items as $key => $value)
             {
-                $obj = new stdClass();
-                $obj->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
-                $obj->currency = $currency;
-                $obj->price = strval($value->ImporteConDescuento);
-                $obj->quantity = '1';
-                $obj->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
-
-                array_push($products, $obj);
+                $product = new stdClass();
+                $product->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
+                $product->currency = $currency;
+                $product->price = strval($value->ImporteConDescuento);
+                $product->quantity = '1';
+                $product->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
+                array_push($products, $product);
             }
 
-            $transactionList = [
+            $transaction = [
                 'invoice_number' => $invoiceNumber,
                 'amount' => [
                     'currency' => $currency,
@@ -108,14 +102,11 @@ class Paypal
                     ]
                 ],
                 'description' => 'This is the payment transaction description',
-                'payment_options' => [
-                    'allowed_payment_method' => 'IMMEDIATE_PAY'
-                ],
-                'item_list' => [
-                    'items' => $products
-                ]
+                'payment_options' => [ 'allowed_payment_method' => 'IMMEDIATE_PAY' ],
+                'item_list' => [ 'items' => $products ]
             ];
-            return [$transactionList];
+            $transactionList[] = $transaction;
+            return $transactionList;
         }
         catch (Exception $ex)
         {
@@ -126,21 +117,19 @@ class Paypal
     public static function CreatePayment($currency, $amount, $items, $lan)
     {
         $json = '';
-        $token = Paypal::GetToken();
+        $token = self::GetToken();
         $transactionId = strval(time());
         $headers = [
             sprintf('Authorization: Bearer %s', $token),
             'Content-Type: application/json'
         ];
-        $webId = Paypal::GetIdWebExperience($headers, $transactionId);
-        $transactions = Paypal::GetTransactionsList($currency, $amount, $items, $lan);
+        $webId = self::GetIdWebExperience($headers, $transactionId);
+        $transactions = self::GetTransactionsList($currency, $amount, $items, $lan);
         $payData = [];
         $data = [
             'intent' => 'sale',
             'experience_profile_id' => $webId,
-            'payer' => [
-                'payment_method' => 'paypal'
-            ],
+            'payer' => [ 'payment_method' => 'paypal' ],
             'transactions' => $transactions,
             'redirect_urls' => [
                 'return_url' => 'https://www.garrafon.com/',
@@ -174,7 +163,7 @@ class Paypal
     public static function ExecutePayment($paymentId, $payerId, $fakeError = null)
     {
         $json = '';
-        $token = Paypal::GetToken();
+        $token = self::GetToken();
         $autorizationCode = '';
 
         $headers = [
@@ -190,9 +179,7 @@ class Paypal
 
         $response = HTTP::Post([
             'uri' => sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId),
-            'data' => [
-                'payer_id' => $payerId
-            ],
+            'data' => [ 'payer_id' => $payerId ],
             'headers' => $headers,
             'errors' => true
         ]);
