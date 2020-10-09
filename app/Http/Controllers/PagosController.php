@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use \App\Request\Paypal;
+use \App\Request\Conekta;
 
 class PagosController extends Controller
 {
@@ -33,6 +34,7 @@ class PagosController extends Controller
         ];
         //return Paypal::GetToken();
         //return Paypal::CreatePayment('MXN', 1500, $items, 'ES');
-        return Paypal::ExecutePayment(/*'PAYID-L57WWFA13845922W3791584A'*/'', 'AQ67T33R5EU22');
+        //return Paypal::ExecutePayment('PAYID-L57WWFA13845922W3791584A', 'AQ67T33R5EU22');
+        return Conekta::test();
     }
 }
