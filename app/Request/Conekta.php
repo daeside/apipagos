@@ -18,29 +18,28 @@ class Conekta
         [
             'line_items'=> [
                 [
-                    'name'        => 'Box of Cohiba S1s',
+                    'name' => 'Box of Cohiba S1s',
                     'description' => 'Imported From Mex.',
-                    'unit_price'  => 20000,
-                    'quantity'    => 1,
-                    'sku'         => 'cohb_s1',
-                    'category'    => 'food',
-                    'tags'        => ['food', 'mexican food']
+                    'unit_price' => 20000,
+                    'quantity' => 1,
+                    'sku' => 'cohb_s1'
                 ]
             ],
-            'currency' => 'mxn',
-            'metadata' => ['test' => 'extra info'],
-            'charges'  => [
+            'charges' => [
                 [
                     'payment_method' => [
-                        'type'       => 'oxxo_cash',
-                        'expires_at' => strtotime(date("Y-m-d H:i:s")) + "36000"
+                        'type' => 'card',
+                        'name' => 'Mario perez',
+                        'number' => '4111111111111111',
+                        'exp_year' => '20',
+                        'exp_month' => '12'
                     ],
                     'amount' => 20000,
                 ]
             ],
             'currency' => 'mxn',
             'customer_info' => [
-                'name'  => 'John Constantine',
+                'name' => 'John Constantine',
                 'phone' => '+5213353319758',
                 'email' => 'hola@hola.com',
             ]

@@ -17,6 +17,11 @@ use Illuminate\Http\Request;
     return $request->user();
 });*/
 
-Route::prefix('pagos')->group(function () {
-    Route::get('/paypalplus', 'PagosController@Test');
+Route::prefix('paypal')->group(function () {
+    Route::get('/create', 'PagosController@PaypalCreate');
+    Route::get('/execute', 'PagosController@PaypalExecute');
+});
+
+Route::prefix('conekta')->group(function () {
+    Route::get('/create', 'PagosController@ConektaCreate');
 });

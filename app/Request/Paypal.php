@@ -68,55 +68,54 @@ class Paypal
 
     private static function GetTransactionsList($currency, $amount, $items, $lan)
     {
-        try
-        {
-            $products = [];
-            $transactionList = [];
-            $name = $lan == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
-            $invoiceNumber = self::GetRandomInvoiceNumber();
-            $items = json_decode(json_encode($items));
+        $products = [];
+        $transactionList = [];
+        $name = strtoupper($lan) == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
+        $invoiceNumber = self::GetRandomInvoiceNumber();
+        $items = json_decode(json_encode($items));
 
-            foreach ($items as $key => $value)
-            {
-                $product = new stdClass();
-                $product->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
-                $product->currency = $currency;
-                $product->price = strval($value->ImporteConDescuento);
-                $product->quantity = '1';
-                $product->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
-                array_push($products, $product);
-            }
-
-            $transaction = [
-                'invoice_number' => $invoiceNumber,
-                'amount' => [
-                    'currency' => $currency,
-                    'total' => strval($amount),
-                    'details' => [
-                        'subtotal' => strval($amount),
-                        'tax' => 0,
-                        'shipping' => 0,
-                        'handling_fee' => 0,
-                        'shipping_discount' => 0,
-                        'insurance' => 0
-                    ]
-                ],
-                'description' => 'This is the payment transaction description',
-                'payment_options' => [ 'allowed_payment_method' => 'IMMEDIATE_PAY' ],
-                'item_list' => [ 'items' => $products ]
-            ];
-            $transactionList[] = $transaction;
-            return $transactionList;
-        }
-        catch (Exception $ex)
+        foreach ($items as $key => $value)
         {
-            return null;
+            $product = new stdClass();
+            $product->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
+            $product->currency = strtoupper($currency);
+            $product->price = strval($value->ImporteConDescuento);
+            $product->quantity = '1';
+            $product->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
+            array_push($products, $product);
         }
+
+        $transaction = [
+            'invoice_number' => $invoiceNumber,
+            'amount' => [
+                'currency' => strtoupper($currency),
+                'total' => strval($amount),
+                'details' => [
+                    'subtotal' => strval($amount),
+                    'tax' => 0,
+                    'shipping' => 0,
+                    'handling_fee' => 0,
+                    'shipping_discount' => 0,
+                    'insurance' => 0
+                ]
+            ],
+            'description' => 'This is the payment transaction description',
+            'payment_options' => [ 'allowed_payment_method' => 'IMMEDIATE_PAY' ],
+            'item_list' => [ 'items' => $products ]
+        ];
+        $transactionList[] = $transaction;
+        return $transactionList;
     }
 
     public static function CreatePayment($currency, $amount, $items, $lan)
     {
         $json = '';
+        $payData = [];
+
+        if(empty($items))
+        {
+            return $payData;
+        }
         $token = self::GetToken();
         $transactionId = strval(time());
         $headers = [
@@ -125,7 +124,6 @@ class Paypal
         ];
         $webId = self::GetIdWebExperience($headers, $transactionId);
         $transactions = self::GetTransactionsList($currency, $amount, $items, $lan);
-        $payData = [];
         $data = [
             'intent' => 'sale',
             'experience_profile_id' => $webId,
@@ -174,7 +172,7 @@ class Paypal
 
         if(empty($fakeError))
         {
-            unset($headers[2]);
+            $headers[2] = null;
         }
 
         $response = HTTP::Post([

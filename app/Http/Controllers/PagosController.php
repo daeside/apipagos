@@ -8,7 +8,7 @@ use \App\Request\Conekta;
 
 class PagosController extends Controller
 {
-    public function Test()
+    public function PaypalCreate()
     {
         $items = [
             [
@@ -32,9 +32,18 @@ class PagosController extends Controller
                 'ClavePrograma' => 'ROYS'
             ]
         ];
-        //return Paypal::GetToken();
-        //return Paypal::CreatePayment('MXN', 1500, $items, 'ES');
-        //return Paypal::ExecutePayment('PAYID-L57WWFA13845922W3791584A', 'AQ67T33R5EU22');
+        $response = Paypal::CreatePayment('MXN', 1500, $items, 'ES');
+        return $response;
+    }
+
+    public function PaypalExecute()
+    {
+        $response = Paypal::ExecutePayment('PAYID-L57WWFA13845922W3791584A', 'AQ67T33R5EU22');
+        return $response;
+    }
+
+    public function ConektaCreate()
+    {
         return Conekta::test();
     }
 }
