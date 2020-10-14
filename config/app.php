@@ -228,4 +228,19 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Application Settings
+    |--------------------------------------------------------------------------
+    |
+    | General settings for application
+    |
+    */
+
+    'PaypalUrl' => env('PAYPAL_URL', ''),
+    'PaypalId' => env('PAYPAL_ID', ''),
+    'PaypalSecret' => env('PAYPAL_SECRET', ''),
+    'PaypalMode' => env('PAYPAL_MODE', ''),
+    'ConektaKey' => env('CONEKTA_KEY', ''),
+
 ];

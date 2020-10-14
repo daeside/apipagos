@@ -13,7 +13,7 @@ class Conekta
 {
     public static function test()
     {
-        ConektaLib::setApiKey(env('ConektaKey'));
+        ConektaLib::setApiKey(config('app.ConektaKey'));
         $valid_order =
         [
             'line_items'=> [

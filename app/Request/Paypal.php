@@ -13,9 +13,9 @@ class Paypal
     private static function GetToken()
     {
         $token = '';
-        $byteArray = utf8_encode(sprintf('%s:%s', env('paypalId'), env('paypalSecret')));
+        $byteArray = utf8_encode(sprintf('%s:%s', config('app.PaypalId'), config('app.PaypalSecret')));
         $response = HTTP::Post([
-            'uri' => sprintf('%s/oauth2/token', env('paypalUrl')), 
+            'uri' => sprintf('%s/oauth2/token', config('app.PaypalUrl')), 
             'data' => [ 'grant_type' => 'client_credentials' ], 
             'headers' => [ sprintf('Authorization: Basic %s', base64_encode($byteArray)) ], 
             'format' => 'urlencode'
@@ -46,7 +46,7 @@ class Paypal
             ]
         ];
         $response = HTTP::Post([
-            'uri' => sprintf('%s/payment-experience/web-profiles', env('paypalUrl')),
+            'uri' => sprintf('%s/payment-experience/web-profiles', config('app.PaypalUrl')),
             'data' => $data,
             'headers' => $headers
         ]);
@@ -135,7 +135,7 @@ class Paypal
             ]
         ];
         $response = HTTP::Post([
-            'uri' => sprintf('%s/payments/payment', env('paypalUrl')),
+            'uri' => sprintf('%s/payments/payment', config('app.PaypalUrl')),
             'data' => $data,
             'headers' => $headers
         ]);
@@ -176,7 +176,7 @@ class Paypal
         }
 
         $response = HTTP::Post([
-            'uri' => sprintf('%s/payments/payment/%s/execute', env('paypalUrl'), $paymentId),
+            'uri' => sprintf('%s/payments/payment/%s/execute', config('app.PaypalUrl'), $paymentId),
             'data' => [ 'payer_id' => $payerId ],
             'headers' => $headers,
             'errors' => true
