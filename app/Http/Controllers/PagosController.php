@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use \App\Request\Paypal;
 use \App\Request\Conekta;
+use \App\Helpers\Http;
 
 class PagosController extends Controller
 {
@@ -44,6 +45,17 @@ class PagosController extends Controller
 
     public function ConektaCreate()
     {
-        return Conekta::test();
+        return Conekta::Create('MXN', 2000);
+        //return HTTP::Get([
+        //    'uri' => 'https://lookup.binlist.net/6011000000000004'
+        //]);
+    }
+
+    public function ConektaCapture()
+    {
+        return Conekta::Capture('ord_2oZNi7D1YAHPqtAoQ');
+        //return HTTP::Get([
+        //    'uri' => 'https://lookup.binlist.net/6011000000000004'
+        //]);
     }
 }

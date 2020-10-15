@@ -11,7 +11,7 @@ use Conekta\Conekta as ConektaLib;
 
 class Conekta
 {
-    public static function test()
+    public static function Create($currency, $amount)
     {
         ConektaLib::setApiKey(config('app.ConektaKey'));
         $valid_order =
@@ -20,7 +20,7 @@ class Conekta
                 [
                     'name' => 'Box of Cohiba S1s',
                     'description' => 'Imported From Mex.',
-                    'unit_price' => 20000,
+                    'unit_price' => 2000,
                     'quantity' => 1,
                     'sku' => 'cohb_s1'
                 ]
@@ -34,10 +34,10 @@ class Conekta
                         'exp_year' => '20',
                         'exp_month' => '12'
                     ],
-                    'amount' => 20000,
+                    'amount' => $amount,
                 ]
             ],
-            'currency' => 'mxn',
+            'currency' => $currency,
             'customer_info' => [
                 'name' => 'John Constantine',
                 'phone' => '+5213353319758',
@@ -58,5 +58,12 @@ class Conekta
         {
             echo $e->getMessage();
         } 
+    }
+
+    public static function Capture($id)
+    {
+        ConektaLib::setApiKey(config('app.ConektaKey'));
+        $order = \Conekta\Order::find($id);
+        return $order->capture();
     }
 }

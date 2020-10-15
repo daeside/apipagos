@@ -24,4 +24,5 @@ Route::prefix('paypal')->group(function () {
 
 Route::prefix('conekta')->group(function () {
     Route::get('/create', 'PagosController@ConektaCreate');
+    Route::get('/capture', 'PagosController@ConektaCapture');
 });
