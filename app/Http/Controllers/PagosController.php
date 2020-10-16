@@ -45,17 +45,41 @@ class PagosController extends Controller
 
     public function ConektaCreate()
     {
-        return Conekta::Create('MXN', 2000);
-        //return HTTP::Get([
-        //    'uri' => 'https://lookup.binlist.net/6011000000000004'
-        //]);
-    }
-
-    public function ConektaCapture()
-    {
-        return Conekta::Capture('ord_2oZNi7D1YAHPqtAoQ');
-        //return HTTP::Get([
-        //    'uri' => 'https://lookup.binlist.net/6011000000000004'
-        //]);
+        $client = [
+            'name' => 'Luis Ramirez',
+            'phone' => '+5213353319758',
+            'email' => 'hola@hola.com',
+        ];
+        $items = [
+            [
+                'Programa' => 'Dolphin Encounter',
+                'Adultos' => 2,
+                'Menores' => 1,
+                'Fecha' => '2020-10-12',
+                'Horario' => '10:00 AM',
+                'ImporteConDescuento' => 700,
+                'ClaveLocacion' => 'CZ',
+                'ClavePrograma' => 'ENCO'
+            ],
+            [
+                'Programa' => 'Dolphin Royal Swim',
+                'Adultos' => 1,
+                'Menores' => 0,
+                'Fecha' => '2020-10-15',
+                'Horario' => '11:00 AM',
+                'ImporteConDescuento' => 800,
+                'ClaveLocacion' => 'CZ',
+                'ClavePrograma' => 'ROYS'
+            ]
+        ];
+        $payment = [
+            'type' => 'card',
+            'name' => 'Mario perezwa',
+            'number' => '4111111111111111',
+            'exp_year' => '20',
+            'exp_month' => '12'
+        ];
+        $response = Conekta::Create('MXN', 1500, $client, $items, $payment, 'ES');
+        return $response;
     }
 }

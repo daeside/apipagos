@@ -8,62 +8,52 @@ use Exception;
 use stdClass;
 use Carbon\Carbon;
 use Conekta\Conekta as ConektaLib;
+use Conekta\Order;
 
 class Conekta
 {
-    public static function Create($currency, $amount)
+    private static function GenerateItemList($items, $lan)
+    {
+        $products = [];
+        $transactionList = [];
+        $name = strtoupper($lan) == "ES" ? "%s %s Adultos y %s Menores Fecha %s Horario %s" : "%s %s Adult and %s Child Date %s Schedule %s";
+        $items = json_decode(json_encode($items));
+
+        foreach ($items as $key => $value)
+        {
+            $product = new stdClass();
+            $product->name = sprintf($name, $value->Programa, $value->Adultos, $value->Menores, Carbon::parse($value->Fecha)->format("m-d-Y"), $value->Horario);
+            $product->unit_price = strval($value->ImporteConDescuento);
+            $product->quantity = '1';
+            $product->sku = sprintf('%s-%s', $value->ClaveLocacion, $value->ClavePrograma);
+            array_push($products, $product);
+        }
+        return $products;
+    }
+    
+    public static function Create($currency, $amount, $client, $items, $payment, $lan)
     {
         ConektaLib::setApiKey(config('app.ConektaKey'));
+        $order = '';
+        $products = self::GenerateItemList($items, $lan);
         $valid_order =
         [
-            'line_items'=> [
-                [
-                    'name' => 'Box of Cohiba S1s',
-                    'description' => 'Imported From Mex.',
-                    'unit_price' => 2000,
-                    'quantity' => 1,
-                    'sku' => 'cohb_s1'
-                ]
-            ],
+            'line_items'=> $products,
             'charges' => [
                 [
-                    'payment_method' => [
-                        'type' => 'card',
-                        'name' => 'Mario perez',
-                        'number' => '4111111111111111',
-                        'exp_year' => '20',
-                        'exp_month' => '12'
-                    ],
+                    'payment_method' => $payment,
                     'amount' => $amount,
                 ]
             ],
             'currency' => $currency,
-            'customer_info' => [
-                'name' => 'John Constantine',
-                'phone' => '+5213353319758',
-                'email' => 'hola@hola.com',
-            ]
+            'customer_info' => $client
         ];
 
         try 
         {
-            $order = \Conekta\Order::create($valid_order);
-            return $order;
+            $order = Order::create($valid_order);
         } 
-        catch (\Conekta\ProcessingError $e)
-        {
-            echo $e->getMessage();
-        } 
-        catch (\Conekta\ParameterValidationError $e)
-        {
-            echo $e->getMessage();
-        } 
-    }
-
-    public static function Capture($id)
-    {
-        ConektaLib::setApiKey(config('app.ConektaKey'));
-        $order = \Conekta\Order::find($id);
-        return $order->capture();
+        catch (Exception $ex){}
+        return $order;
     }
 }
