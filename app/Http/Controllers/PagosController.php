@@ -39,7 +39,7 @@ class PagosController extends Controller
 
     public function PaypalExecute()
     {
-        $response = Paypal::ExecutePayment('PAYID-L57WWFA13845922W3791584A', 'AQ67T33R5EU22');
+        $response = Paypal::ExecutePayment('PAYID-L6E2PEA3MT53149AG7367435', 'NDGA89RTZYXTU');
         return $response;
     }
 
