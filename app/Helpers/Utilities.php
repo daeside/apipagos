@@ -8,7 +8,6 @@ use Carbon\Carbon;
 
 class Utilities
 {
-    /*
     public static function ToObject(Array $data)
     {
         return json_decode(json_encode($data));
@@ -45,5 +44,4 @@ class Utilities
             'message' => $messages
         ]);
     }
-    */
 }
