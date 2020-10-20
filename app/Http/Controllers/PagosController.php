@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use \App\Request\Paypal;
 use \App\Request\Conekta;
-use \App\Helpers\Http;
 
 class PagosController extends Controller
 {

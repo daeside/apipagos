@@ -8,11 +8,6 @@ use Carbon\Carbon;
 
 class Utilities
 {
-    public static function ToObject(Array $data)
-    {
-        return json_decode(json_encode($data));
-    }
-
     public static function ArrayToObject(Array $data)
     {
         $json = json_encode($data);
@@ -39,9 +34,9 @@ class Utilities
                 $messages .= "$message ";
             }
         }
-        return Utilities::ToObject([
+        return json_decode(json_encode([
             'valid' => $valid,
             'message' => $messages
-        ]);
+        ]));
     }
 }

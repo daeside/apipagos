@@ -2,8 +2,6 @@
 
 namespace App\Request;
 
-use \App\Helpers\Http;
-use \App\Helpers\Utilities;
 use Exception;
 use stdClass;
 use Carbon\Carbon;
