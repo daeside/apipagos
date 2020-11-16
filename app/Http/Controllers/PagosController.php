@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use \App\Request\Paypal;
 use \App\Request\Conekta;
+use \App\Helpers\Utilities;
 
 class PagosController extends Controller
 {
@@ -38,7 +39,7 @@ class PagosController extends Controller
 
     public function PaypalExecute()
     {
-        $response = Paypal::ExecutePayment('PAYID-L6E2PEA3MT53149AG7367435', 'NDGA89RTZYXTU');
+        $response = Paypal::ExecutePayment('PAYID-L6ZLF5Q3U772394AF079422C', 'NDGA89RTZYXTU');
         return $response;
     }
 

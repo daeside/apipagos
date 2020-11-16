@@ -29,11 +29,11 @@ class Paypal
         return $token;
     }
 
-    private static function GetIdWebExperience($headers, $sessionId)
+    private static function GetIdWebExperience($headers, $transactionId)
     {
         $webId = '';
         $data = [
-            'name' => $sessionId,
+            'name' => $transactionId,
             'temporary' => true,
             'presentation' => [ 'logo_image' => 'https://example.com/logo_image/' ],
             'input_fields' => [
@@ -117,7 +117,7 @@ class Paypal
             return $payData;
         }
         $token = self::GetToken();
-        $transactionId = strval(time());
+        $transactionId = Utilities::Guid();
         $headers = [
             sprintf('Authorization: Bearer %s', $token),
             'Content-Type: application/json'

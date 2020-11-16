@@ -39,4 +39,28 @@ class Utilities
             'message' => $messages
         ]));
     }
+
+    public static function Guid()
+    {
+        // Create a token
+        $token = sprintf('%s%s%s', 
+            $_SERVER['HTTP_HOST'], 
+            $_SERVER['REQUEST_URI'], 
+            uniqid(rand(), true)
+        );
+    
+        // GUID is 128-bit hex
+        $hash = strtoupper(md5($token));
+
+        // Create formatted GUID. GUID format is XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX for readability
+        $guid = sprintf('%s-%s-%s-%s-%s', 
+            substr($hash,  0,  8), 
+            substr($hash,  8,  4), 
+            substr($hash, 12,  4), 
+            substr($hash, 16,  4), 
+            substr($hash, 20, 12)
+        );
+            
+        return $guid;
+    }
 }
