@@ -88,13 +88,13 @@ class Http
 
         if (!empty($settings->data))
         {
-            $content = self::GenertateContent($settings->data, $settings->format);
+            $content = self::GenerateContent($settings->data, $settings->format);
             $client = self::SetHttpMethod($client, $content, $settings->type);
         }
         return $client;
     }
 	
-	private static function GenertateContent($data, $type)
+	private static function GenerateContent($data, $type)
 	{
 		$content = null;
 		$request = empty($type) ? '' : strtoupper($type);
